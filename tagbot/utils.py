@@ -2,18 +2,17 @@ import os, math
 
 from steem import Steem
 from steem.account import Account
-from settings import NODES
 from dateutil.parser import parse
 from datetime import datetime
 
 _steem_conn = None
 
 
-def get_steem_conn():
+def get_steem_conn(nodes):
     global _steem_conn
     if _steem_conn is None:
         _steem_conn = Steem(
-            nodes=NODES,
+            nodes=nodes,
             keys=[os.getenv("POSTING_KEY"), ]
         )
 

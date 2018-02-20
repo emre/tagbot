@@ -1,0 +1,10 @@
+{
+  "NODES": ["https://api.steemit.com"],
+  "BOT_ACCOUNT": "dshot-io",
+  "TAG": "photography",
+  "MINIMUM_VP_TO_START": 95,
+  "VOTE_WEIGHT": 20,
+  "VOTE_COUNT": 2,
+  "MINIMUM_AUTHOR_REP": 40,
+  "BLACKLIST": ["author1", "author2"]
+}
