@@ -20,7 +20,7 @@ Do that in a python3.6 virtual environment and it will install all the requireme
 #### Running
 
 ```
-$ tagbot /path/to/config.json
+$ POSTING_KEY=private_posting_key tagbot /path/to/config.json
 ```
 
 Configuration is stored in JSON files. You can find an example in the repository.
