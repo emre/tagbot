@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='steem_tagbot',
-    version='0.0.2',
+    version='0.0.3',
     packages=["tagbot",],
     url='http://github.com/emre/tagbot',
     license='MIT',
