@@ -35,7 +35,7 @@ class TagBot:
         return reputation(author_rep) > self.config["MINIMUM_AUTHOR_REP"]
 
     def start_voting_round(self):
-        # Fetch last 100 "hot" posts on photography tag
+        # Fetch last 100 "hot" posts on the selected tag
         query = {"limit": 100, "tag": self.config["TAG"]}
         posts = list(self.steemd_instance.get_discussions_by_created(query))
         logger.info("%s posts found.", len(posts))
@@ -45,14 +45,51 @@ class TagBot:
                  self.reputation_is_enough(p["author_reputation"])]
 
         # Discard the posts with blacklisted authors
-        posts = [p for p in posts if
-                 p["author"] not in self.config.get("BLACKLIST", [])]
+        blacklist = self.config.get("BLACKLIST", [])
+        clear_posts = []
+        skipped_authors = []
+        for post in posts:
+            if post.get("author") in blacklist:
+                skipped_authors.append(post.get("author"))
+                continue
+            clear_posts.append(post)
 
+        if len(skipped_authors):
+            logger.info("These authors posts are skipped. \n %s", ",".join(skipped_authors))
+
+        posts = clear_posts
+
+        # Discard the posts with blacklisted tags
+        tag_blacklist = self.config.get("TAG_BLACKLIST", [])
+        clear_posts = []
+        skipped_posts = []
+        for post in posts:
+            try:
+                json_metadata = post.get("json_metadata")
+                if json_metadata:
+                    tags = json.loads(json_metadata)["tags"]
+            except Exception as error:
+                logger.error(error)
+                skipped_posts.append(post)
+                continue
+            if len(set(tags).intersection(set(tag_blacklist))) > 0:
+                skipped_posts.append(post)
+                continue
+            clear_posts.append(post)
+
+        if len(skipped_posts):
+            posts_as_identifier = [
+                "%s/%s" % (p.get("author"), p.get("permlink"))
+                for p in skipped_posts]
+            logger.info(
+                "These posts are skipped due to tag blacklist.\n %s",
+                "\n".join(posts_as_identifier))
+
+        posts = clear_posts
         logger.info("%s posts left after the filter.", len(posts))
 
         # Shuffle the list to make it random
         random.shuffle(posts)
-
         for post in posts[0:self.config["VOTE_COUNT"]]:
             self.upvote(
                 Post(post, steemd_instance=self.steemd_instance),
