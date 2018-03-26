@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='steem_tagbot',
-    version='0.0.5',
+    version='0.0.6',
     packages=["tagbot",],
     url='http://github.com/emre/tagbot',
     license='MIT',
@@ -14,5 +14,5 @@ setup(
             'tagbot = tagbot.bot:main',
         ],
     },
-    install_requires=["steem_dshot",]
+    install_requires=["steem_dshot", "nltk"]
 )
