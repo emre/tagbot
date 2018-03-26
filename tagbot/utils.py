@@ -1,9 +1,11 @@
-import os, math
+import math
+import os
+from datetime import datetime
 
+from dateutil.parser import parse
+from nltk import wordpunct_tokenize, PorterStemmer
 from steem import Steem
 from steem.account import Account
-from dateutil.parser import parse
-from datetime import datetime
 
 _steem_conn = None
 
@@ -43,3 +45,15 @@ def reputation(reputation, precision=2):
     if rep < 0:
         score = 50 - score
     return round(score, precision)
+
+
+def tokenize(text):
+    porter = PorterStemmer()
+    words = wordpunct_tokenize(text)
+    stemmed = [porter.stem(word) for word in words]
+    return [
+        word.lower()
+        for word in stemmed
+        if word.isalpha()
+        and len(word) > 2
+    ]
