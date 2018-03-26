@@ -35,3 +35,6 @@ Configuration is stored in JSON files. You can find an example in the repository
 | VOTE_COUNT          | How many votes should be casted in each voting round |
 | MINIMUM_AUTHOR_REP  | Ignore authors with low reputation                   |
 | BLACKLIST           | A list of authors to ignore                          |
+| TAG_BLACKLIST       | A list of authors to ignore                          |
+| MINIMUM_WORD_COUNT  | Minimum Word Count                                   |
+| APP_WHITELIST       | Only vote posts posted from a specified platform     |
