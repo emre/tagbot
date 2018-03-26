@@ -3,10 +3,13 @@ import json
 import logging
 import random
 import time
+from datetime import datetime, timedelta
 
+from dateutil.parser import parse
+from steem.account import Account
 from steem.post import Post
 
-from tagbot.utils import get_steem_conn, get_current_vp, url, reputation
+from tagbot.utils import get_steem_conn, get_current_vp, url, reputation, tokenize
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -21,7 +24,8 @@ class TagBot:
 
     def check_vp(self):
         current_vp = get_current_vp(
-            self.config["BOT_ACCOUNT"], self.steemd_instance)
+            self.config["BOT_ACCOUNT"],
+            self.steemd_instance)
         if current_vp < self.config["MINIMUM_VP_TO_START"]:
             raise ValueError(
                 "Current voting power is not enough to start the round.",
@@ -30,66 +34,75 @@ class TagBot:
         else:
             logger.info("VP is enough, let's start the round!")
 
+    def last_voted_accounts(self):
+        voted_accounts = set()
+        account = Account(self.config.get("BOT_ACCOUNT"))
+        for vote in account.history_reverse(filter_by=["vote"]):
+            created_at = parse(vote["timestamp"])
+            if created_at < (datetime.utcnow() - timedelta(days=1)):
+                break
+            voted_accounts.add(vote["author"])
+
+        return voted_accounts
+
+    def conforms_minimum_word_count(self, body):
+        # @todo: consider removing noise. (html, markdown etc.)
+        if self.config.get("MINIMUM_WORD_COUNT"):
+            word_count = len(tokenize(body))
+            if word_count < self.config.get("MINIMUM_WORD_COUNT"):
+                return False
+        return True
+
     def reputation_is_enough(self, author_rep):
         # if the user rep is below than 25, than discard the post.
         return reputation(author_rep) > self.config["MINIMUM_AUTHOR_REP"]
 
     def start_voting_round(self):
-        # Fetch last 100 "hot" posts on the selected tag
+        # Fetch last 100 posts on the selected tag
         query = {"limit": 100, "tag": self.config["TAG"]}
         posts = list(self.steemd_instance.get_discussions_by_created(query))
         logger.info("%s posts found.", len(posts))
 
-        # Discard the posts with authors low rep.
-        posts = [p for p in posts if
-                 self.reputation_is_enough(p["author_reputation"])]
+        # Voted accounts in the last 24h
+        already_voted = self.last_voted_accounts()
 
-        # Discard the posts with blacklisted authors
         blacklist = self.config.get("BLACKLIST", [])
-        clear_posts = []
-        skipped_authors = []
+        app_whitelist = self.config.get("APP_WHITELIST", [])
+        filtered_posts = []
         for post in posts:
+            post_instance = Post(post, steemd_instance=self.steemd_instance)
+
+            if not self.reputation_is_enough(post["author_reputation"]):
+                continue
+
             if post.get("author") in blacklist:
-                skipped_authors.append(post.get("author"))
                 continue
-            clear_posts.append(post)
 
-        if len(skipped_authors):
-            logger.info("These authors posts are skipped. \n %s", ",".join(skipped_authors))
-
-        posts = clear_posts
-
-        # Discard the posts with blacklisted tags
-        tag_blacklist = self.config.get("TAG_BLACKLIST", [])
-        clear_posts = []
-        skipped_posts = []
-        for post in posts:
-            try:
-                json_metadata = post.get("json_metadata")
-                if json_metadata:
-                    tags = json.loads(json_metadata)["tags"]
-            except Exception as error:
-                logger.error(error)
-                skipped_posts.append(post)
+            if post.get("author") in already_voted:
                 continue
-            if len(set(tags).intersection(set(tag_blacklist))) > 0:
-                skipped_posts.append(post)
+
+            tag_blacklist = self.config.get("TAG_BLACKLIST", [])
+            if set(tag_blacklist).intersection(post_instance.get("tags")):
                 continue
-            clear_posts.append(post)
 
-        if len(skipped_posts):
-            posts_as_identifier = [
-                "%s/%s" % (p.get("author"), p.get("permlink"))
-                for p in skipped_posts]
-            logger.info(
-                "These posts are skipped due to tag blacklist.\n %s",
-                "\n".join(posts_as_identifier))
+            if app_whitelist:
+                app = post_instance.get("json_metadata").get("app")
+                if not app:
+                    continue
+                app_without_version = app.split("/")[0]
+                if app_without_version not in app_whitelist:
+                    continue
 
-        posts = clear_posts
-        logger.info("%s posts left after the filter.", len(posts))
+            if not self.conforms_minimum_word_count(post_instance.get("body")):
+                continue
+
+            filtered_posts.append(post)
+
+        logger.info("%s posts left after the filters." % len(filtered_posts))
 
         # Shuffle the list to make it random
-        random.shuffle(posts)
+        random.shuffle(filtered_posts)
+
         for post in posts[0:self.config["VOTE_COUNT"]]:
             self.upvote(
                 Post(post, steemd_instance=self.steemd_instance),
