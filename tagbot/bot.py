@@ -8,6 +8,7 @@ from datetime import datetime, timedelta
 from dateutil.parser import parse
 from steem.account import Account
 from steem.post import Post
+from steem.amount import Amount
 
 from tagbot.utils import get_steem_conn, get_current_vp, url, reputation, tokenize
 
@@ -58,12 +59,61 @@ class TagBot:
         # if the user rep is below than 25, than discard the post.
         return reputation(author_rep) > self.config["MINIMUM_AUTHOR_REP"]
 
+    def fetch_tag(self, tag, start_author=None, start_permlink=None, posts=None, scanned_pages=None):
+
+        logger.info("Fetching tag: #%s", tag)
+
+        if not scanned_pages:
+            scanned_pages = 0
+
+        if not posts:
+            posts = []
+
+        query = {
+            "limit": 100,
+            "tag": tag,
+        }
+        if start_author:
+            query.update({
+                "start_author": start_author,
+                "start_permlink": start_permlink,
+            })
+        post_list = list(self.steemd_instance.get_discussions_by_created(query))
+        for post in post_list:
+            created_at = parse(post["created"])
+
+            if (datetime.utcnow() - created_at).days > 5:
+                return posts
+
+            elapsed_hours = (datetime.utcnow() - created_at).total_seconds() // 3600
+            if self.config.get("MINIMUM_POST_AGE"):
+                if self.config.get("MINIMUM_POST_AGE") > elapsed_hours:
+                    continue
+
+            if self.config.get("MAXIMUM_POST_REWARDS"):
+                pending_payout = Amount(post.get("pending_payout_value"))
+                if pending_payout.amount > self.config.get("MAXIMUM_POST_REWARDS"):
+                    print(post)
+                    continue
+
+            posts.append(post)
+
+        if scanned_pages > 300 or len(posts) > 100:
+            logger.info("%s posts found at #%s tag.", len(posts), tag)
+            return posts
+
+        return self.fetch_tag(
+            tag,
+            start_author=post["author"],
+            start_permlink=post["permlink"],
+            posts=posts,
+            scanned_pages=scanned_pages + 1,
+        )
+
     def start_voting_round(self):
         posts = []
         for tag in self.target_tags:
-            logger.info("Fetching #%s tag", tag)
-            query = {"limit": 100, "tag": tag}
-            posts += list(self.steemd_instance.get_discussions_by_created(query))
+            posts += self.fetch_tag(tag)
         logger.info("%s posts found.", len(posts))
 
         already_voted = self.last_voted_accounts()

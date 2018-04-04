@@ -29,7 +29,7 @@ Configuration is stored in JSON files. You can find an example in the repository
 |:-------------------:|------------------------------------------------------|
 | NODES               |  A list of steem nodes to connect                    |
 | BOT_ACCOUNT         | Bot account to vote                                  |
-| TAGS                | Target tags to upvote posts                           |
+| TAGS                | Target tags to upvote posts                          |
 | MINIMUM_VP_TO_START | Bot should sleep until this VP is generated          |
 | VOTE_WEIGHT         | Vote weight for every upvote (in percent)            |
 | VOTE_COUNT          | How many votes should be casted in each voting round |
@@ -38,3 +38,5 @@ Configuration is stored in JSON files. You can find an example in the repository
 | TAG_BLACKLIST       | A list of authors to ignore                          |
 | MINIMUM_WORD_COUNT  | Minimum Word Count                                   |
 | APP_WHITELIST       | Only vote posts posted from a specified platform     |
+| MINIMUM_POST_AGE    | Minimum post age in hours                            |
+| MAXIMUM_POST_REWARDS| Skip posts earned more than $N rewards               |
