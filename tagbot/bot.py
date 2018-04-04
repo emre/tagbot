@@ -21,6 +21,7 @@ class TagBot:
     def __init__(self, config, steemd_instance):
         self.config = config
         self.steemd_instance = steemd_instance
+        self.target_tags = config.get("TAGS") or [config.get("TAG"), ]
 
     def check_vp(self):
         current_vp = get_current_vp(
@@ -58,12 +59,13 @@ class TagBot:
         return reputation(author_rep) > self.config["MINIMUM_AUTHOR_REP"]
 
     def start_voting_round(self):
-        # Fetch last 100 posts on the selected tag
-        query = {"limit": 100, "tag": self.config["TAG"]}
-        posts = list(self.steemd_instance.get_discussions_by_created(query))
+        posts = []
+        for tag in self.target_tags:
+            logger.info("Fetching #%s tag", tag)
+            query = {"limit": 100, "tag": tag}
+            posts += list(self.steemd_instance.get_discussions_by_created(query))
         logger.info("%s posts found.", len(posts))
 
-        # Voted accounts in the last 24h
         already_voted = self.last_voted_accounts()
 
         blacklist = self.config.get("BLACKLIST", [])
@@ -104,6 +106,8 @@ class TagBot:
         random.shuffle(filtered_posts)
 
         for post in posts[0:self.config["VOTE_COUNT"]]:
+            if self.config.get("DEBUG"):
+                break
             self.upvote(
                 Post(post, steemd_instance=self.steemd_instance),
                 self.config["VOTE_WEIGHT"]
