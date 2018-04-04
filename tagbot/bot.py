@@ -36,16 +36,18 @@ class TagBot:
         else:
             logger.info("VP is enough, let's start the round!")
 
-    def last_voted_accounts(self):
+    def last_voted_accounts_and_posts(self):
         voted_accounts = set()
+        voted_posts = set()
         account = Account(self.config.get("BOT_ACCOUNT"))
         for vote in account.history_reverse(filter_by=["vote"]):
             created_at = parse(vote["timestamp"])
             if created_at < (datetime.utcnow() - timedelta(days=1)):
                 break
             voted_accounts.add(vote["author"])
+            voted_posts.add("@%s/%s" % (vote["author"], vote["permlink"]))
 
-        return voted_accounts
+        return voted_accounts, voted_posts
 
     def conforms_minimum_word_count(self, body):
         # @todo: consider removing noise. (html, markdown etc.)
@@ -93,13 +95,16 @@ class TagBot:
             if self.config.get("MAXIMUM_POST_REWARDS"):
                 pending_payout = Amount(post.get("pending_payout_value"))
                 if pending_payout.amount > self.config.get("MAXIMUM_POST_REWARDS"):
-                    print(post)
                     continue
 
             posts.append(post)
 
         if scanned_pages > 300 or len(posts) > 100:
             logger.info("%s posts found at #%s tag.", len(posts), tag)
+            return posts
+
+        # empty tag?
+        if not len(post_list):
             return posts
 
         return self.fetch_tag(
@@ -116,7 +121,7 @@ class TagBot:
             posts += self.fetch_tag(tag)
         logger.info("%s posts found.", len(posts))
 
-        already_voted = self.last_voted_accounts()
+        already_voted_accounts, already_voted_posts = self.last_voted_accounts_and_posts()
 
         blacklist = self.config.get("BLACKLIST", [])
         app_whitelist = self.config.get("APP_WHITELIST", [])
@@ -127,10 +132,13 @@ class TagBot:
             if not self.reputation_is_enough(post["author_reputation"]):
                 continue
 
+            if "@%s/%s" % (post.get("author"), post.get("permlink")) in already_voted_posts:
+                continue
+
             if post.get("author") in blacklist:
                 continue
 
-            if post.get("author") in already_voted:
+            if post.get("author") in already_voted_accounts:
                 continue
 
             tag_blacklist = self.config.get("TAG_BLACKLIST", [])
@@ -186,8 +194,19 @@ class TagBot:
             logger.error(error)
             return self.upvote(post, weight, retry_count + 1)
 
-    def run(self):
+        if self.config.get("POST_REPLY_TEMPLATE"):
+            self.reply(post)
 
+    def reply(self, post):
+        reply_template = open(self.config.get("POST_REPLY_TEMPLATE")).read()
+
+        reply_body = reply_template.format(
+            author=post.get("author")
+        )
+        post.reply(reply_body, author=self.config["BOT_ACCOUNT"])
+        time.sleep(20)
+
+    def run(self):
         self.check_vp()
         self.start_voting_round()
 
