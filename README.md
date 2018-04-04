@@ -29,7 +29,7 @@ Configuration is stored in JSON files. You can find an example in the repository
 |:-------------------:|------------------------------------------------------|
 | NODES               |  A list of steem nodes to connect                    |
 | BOT_ACCOUNT         | Bot account to vote                                  |
-| TAG                 | Target tag to upvote posts                           |
+| TAGS                | Target tags to upvote posts                           |
 | MINIMUM_VP_TO_START | Bot should sleep until this VP is generated          |
 | VOTE_WEIGHT         | Vote weight for every upvote (in percent)            |
 | VOTE_COUNT          | How many votes should be casted in each voting round |
