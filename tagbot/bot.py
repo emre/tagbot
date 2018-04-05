@@ -40,9 +40,10 @@ class TagBot:
         voted_accounts = set()
         voted_posts = set()
         account = Account(self.config.get("BOT_ACCOUNT"))
+        vote_interval = self.config.get("VOTE_INTERVAL_IN_DAYS", 1)
         for vote in account.history_reverse(filter_by=["vote"]):
             created_at = parse(vote["timestamp"])
-            if created_at < (datetime.utcnow() - timedelta(days=1)):
+            if created_at < (datetime.utcnow() - timedelta(days=vote_interval)):
                 break
             voted_accounts.add(vote["author"])
             voted_posts.add("@%s/%s" % (vote["author"], vote["permlink"]))
@@ -163,7 +164,7 @@ class TagBot:
         # Shuffle the list to make it random
         random.shuffle(filtered_posts)
 
-        for post in posts[0:self.config["VOTE_COUNT"]]:
+        for post in filtered_posts[0:self.config["VOTE_COUNT"]]:
             if self.config.get("DEBUG"):
                 break
             self.upvote(
