@@ -157,6 +157,23 @@ class TagBot:
             if not self.conforms_minimum_word_count(post_instance.get("body")):
                 continue
 
+            if self.config.get("TRUSTED_ACCOUNTS"):
+
+                # check downvotes
+                found_downvote = False
+                for vote in post.get("active_votes", []):
+                    rshares = vote["rshares"]
+                    if not isinstance(rshares, int):
+                        rshares = int(rshares)
+
+                    if vote["voter"] in self.config.get("TRUSTED_ACCOUNTS") and rshares < 0:
+                        found_downvote = True
+                        break
+
+                if found_downvote:
+                    logger.info("Found a downvote of trusted accounts. Skipping. %s", post.identifier)
+                    continue
+
             filtered_posts.append(post)
 
         logger.info("%s posts left after the filters." % len(filtered_posts))
