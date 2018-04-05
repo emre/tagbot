@@ -40,3 +40,5 @@ Configuration is stored in JSON files. You can find an example in the repository
 | APP_WHITELIST       | Only vote posts posted from a specified platform     |
 | MINIMUM_POST_AGE    | Minimum post age in hours                            |
 | MAXIMUM_POST_REWARDS| Skip posts earned more than $N rewards               |
+| VOTE_INTERVAL_IN_DAYS| Set it to 3, and one author don't get any rewards more than one in 3 days.|
+| TRUSTED_ACCOUNTS     | If these accounts flagged a post, it will be skipped for the bot upvote.|
