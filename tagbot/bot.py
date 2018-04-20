@@ -183,7 +183,27 @@ class TagBot:
 
         for post in filtered_posts[0:self.config["VOTE_COUNT"]]:
             if self.config.get("DEBUG"):
-                break
+                print(post)
+                continue
+
+            # check cheetah commented on it
+            replies = self.steemd_instance.get_content_replies(
+                post.get("author"), post.get("permlink")
+            )
+
+            found_cheetah = False
+            for reply in replies:
+                if reply["author"] in ["cheetah"]:
+                    found_cheetah = True
+                    break
+
+            if found_cheetah:
+                logger.info(
+                    "Post: %s is skipped since it's commented by cheetah.",
+                    post.identifier
+                )
+                continue
+
             self.upvote(
                 Post(post, steemd_instance=self.steemd_instance),
                 self.config["VOTE_WEIGHT"]
