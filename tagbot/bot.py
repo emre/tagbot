@@ -9,6 +9,7 @@ from dateutil.parser import parse
 from steem.account import Account
 from steem.post import Post
 from steem.amount import Amount
+import requests
 
 from tagbot.utils import get_steem_conn, get_current_vp, url, reputation, tokenize
 
@@ -116,6 +117,11 @@ class TagBot:
             scanned_pages=scanned_pages + 1,
         )
 
+    def in_global_blacklist(self, author):
+        url = "http://blacklist.usesteem.com/user/" + author
+        response = requests.get(url).json()
+        return bool(len(response["blacklisted"]))
+
     def start_voting_round(self):
         posts = []
         for tag in self.target_tags:
@@ -200,6 +206,13 @@ class TagBot:
             if found_cheetah:
                 logger.info(
                     "Post: %s is skipped since it's commented by cheetah.",
+                    post.identifier
+                )
+                continue
+
+            if self.in_global_blacklist(post.get("author")):
+                logger.info(
+                    "Post: %s is skipped since it's blacklisted globally.",
                     post.identifier
                 )
                 continue
