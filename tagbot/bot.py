@@ -101,7 +101,7 @@ class TagBot:
 
             posts.append(post)
 
-        if scanned_pages > 300 or len(posts) > 100:
+        if scanned_pages > 100 or len(posts) > 50:
             logger.info("%s posts found at #%s tag.", len(posts), tag)
             return posts
 
