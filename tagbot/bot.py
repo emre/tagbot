@@ -177,7 +177,6 @@ class TagBot:
                         break
 
                 if found_downvote:
-                    logger.info("Found a downvote of trusted accounts. Skipping. %s", post.identifier)
                     continue
 
             filtered_posts.append(post)
@@ -204,17 +203,9 @@ class TagBot:
                     break
 
             if found_cheetah:
-                logger.info(
-                    "Post: %s is skipped since it's commented by cheetah.",
-                    post.identifier
-                )
                 continue
 
             if self.in_global_blacklist(post.get("author")):
-                logger.info(
-                    "Post: %s is skipped since it's blacklisted globally.",
-                    post.identifier
-                )
                 continue
 
             self.upvote(
@@ -229,8 +220,6 @@ class TagBot:
 
         if self.config["BOT_ACCOUNT"] in [
             v["voter"] for v in post.get("active_votes", [])]:
-            logger.error(
-                "Already voted on this. Skipping. %s", post.identifier)
             return
 
         try:
