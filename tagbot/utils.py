@@ -4,16 +4,16 @@ from datetime import datetime
 
 from dateutil.parser import parse
 from nltk import wordpunct_tokenize, PorterStemmer
-from steem import Steem
-from steem.account import Account
+from hive import Hive
+from hive.account import Account
 
 _steem_conn = None
 
 
-def get_steem_conn(nodes):
+def get_hive_conn(nodes):
     global _steem_conn
     if _steem_conn is None:
-        _steem_conn = Steem(
+        _steem_conn = Hive(
             nodes=nodes,
             keys=[os.getenv("POSTING_KEY"), ]
         )
@@ -22,7 +22,7 @@ def get_steem_conn(nodes):
 
 
 def get_current_vp(username, steemd):
-    account = Account(username, steemd_instance=steemd)
+    account = Account(username, hived_instance=steemd)
     last_vote_time = parse(account["last_vote_time"])
     diff_in_seconds = (datetime.utcnow() - last_vote_time).total_seconds()
     regenerated_vp = diff_in_seconds * 10000 / 86400 / 5
@@ -34,7 +34,7 @@ def get_current_vp(username, steemd):
 
 
 def url(p):
-    return "https://steemit.com/@%s/%s" % (p.get("author"), p.get("permlink"))
+    return "https://hive.blog/@%s/%s" % (p.get("author"), p.get("permlink"))
 
 
 def reputation(reputation, precision=2):

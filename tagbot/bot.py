@@ -6,12 +6,12 @@ import time
 from datetime import datetime, timedelta
 
 from dateutil.parser import parse
-from steem.account import Account
-from steem.post import Post
-from steem.amount import Amount
+from hive.account import Account
+from hive.post import Post
+from hive.amount import Amount
 import requests
 
-from tagbot.utils import get_steem_conn, get_current_vp, url, reputation, tokenize
+from tagbot.utils import get_hive_conn, get_current_vp, url, reputation, tokenize
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -82,6 +82,7 @@ class TagBot:
                 "start_author": start_author,
                 "start_permlink": start_permlink,
             })
+        logger.info(query)
         post_list = list(self.steemd_instance.get_discussions_by_created(query))
         for post in post_list:
             created_at = parse(post["created"])
@@ -118,7 +119,7 @@ class TagBot:
         )
 
     def in_global_blacklist(self, author):
-        url = "http://blacklist.usesteem.com/user/" + author
+        url = "http://blacklist.usehive.com/user/" + author
         response = requests.get(url).json()
         return bool(len(response["blacklisted"]))
 
@@ -126,6 +127,10 @@ class TagBot:
         posts = []
         for tag in self.target_tags:
             posts += self.fetch_tag(tag)
+
+        # Shuffle the list to make it random
+        random.shuffle(posts)
+        posts = posts[0:100]
         logger.info("%s posts found.", len(posts))
 
         already_voted_accounts, already_voted_posts = self.last_voted_accounts_and_posts()
@@ -133,8 +138,12 @@ class TagBot:
         blacklist = self.config.get("BLACKLIST", [])
         app_whitelist = self.config.get("APP_WHITELIST", [])
         filtered_posts = []
+        completed = 0
+        total = len(posts)
         for post in posts:
-            post_instance = Post(post, steemd_instance=self.steemd_instance)
+            logger.info("Progress: %s/%s", completed, total)
+            completed += 1
+            post_instance = Post(post, hived_instance=self.steemd_instance)
 
             if not self.reputation_is_enough(post["author_reputation"]):
                 continue
@@ -209,7 +218,7 @@ class TagBot:
                 continue
 
             self.upvote(
-                Post(post, steemd_instance=self.steemd_instance),
+                Post(post, hived_instance=self.steemd_instance),
                 self.config["VOTE_WEIGHT"]
             )
 
@@ -258,7 +267,7 @@ def main():
     config = json.loads(open(args.config).read())
     upvote_bot = TagBot(
         config,
-        get_steem_conn(config["NODES"])
+        get_hive_conn(config["NODES"])
     )
     upvote_bot.run()
 
