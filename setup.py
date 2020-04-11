@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='hive_tagbot',
-    version='0.1.0',
+    version='0.1.1',
     packages=["tagbot",],
     url='http://github.com/emre/tagbot',
     license='MIT',
@@ -14,5 +14,5 @@ setup(
             'tagbot = tagbot.bot:main',
         ],
     },
-    install_requires=["hivepy", "nltk", "requests"]
+    install_requires=["hivepy", "nltk", "requests", "dateutils"]
 )
