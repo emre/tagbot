@@ -12,10 +12,18 @@ etc.
 #### Installation
 
 ```
-$ (sudo) pip install steem_tagbot
+$ (sudo) pip install hive_tagbot
 ```
 
 Do that in a python3.6 virtual environment and it will install all the requirements.
+
+#### Migrating from Steem
+
+```
+$ (sudo) pip uninstall steem_tagbot
+```
+
+Then do the installation above.
 
 #### Running
 
@@ -27,7 +35,7 @@ Configuration is stored in JSON files. You can find an example in the repository
 
 |        Option       | Value                                                |
 |:-------------------:|------------------------------------------------------|
-| NODES               |  A list of steem nodes to connect                    |
+| NODES               | A list of hive nodes to connect                    |
 | BOT_ACCOUNT         | Bot account to vote                                  |
 | TAGS                | Target tags to upvote posts                          |
 | MINIMUM_VP_TO_START | Bot should sleep until this VP is generated          |
